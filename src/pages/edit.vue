@@ -382,18 +382,18 @@
                         autoCorrect="off"
                         spellCheck="false"
                         :placeholder="t('savePathTips')"
-                        @click="savePathHandle('select')"
+                        @click="savePathHandle('open')"
                     >
                         <template #append>
                             <el-tooltip
                                 class="box-item"
-                                :content="t('staticFile')"
                                 placement="bottom"
+                                :content="t('savePath')"
                             >
                                 <el-button
                                     class="distUpload"
                                     :icon="FolderOpened"
-                                    @click="savePathHandle('open')"
+                                    @click="savePathHandle('select')"
                                 />
                             </el-tooltip>
                         </template>
@@ -533,8 +533,8 @@ import {
     exists,
     remove,
     writeFile,
-    rename,
     mkdir,
+    copyFile,
 } from '@tauri-apps/plugin-fs'
 import {
     appCacheDir,
@@ -558,6 +558,7 @@ import {
     FolderOpened,
     ReadingLamp,
 } from '@element-plus/icons-vue'
+import ppIcon from '@/assets/images/pakeplus.png'
 import CutterImg from '@/components/CutterImg.vue'
 import CodeEdit from '@/components/CodeEdit.vue'
 import { useI18n } from 'vue-i18n'
@@ -585,9 +586,9 @@ import {
     fileLimitNumber,
     isDev,
     readStaticFile,
-    rhExeUrl,
     base64PngToIco,
     isAlphanumeric,
+    imageToBase64,
 } from '@/utils/common'
 import { arch, platform } from '@tauri-apps/plugin-os'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -612,11 +613,12 @@ const file = ref<any>(null)
 
 const distInput = ref<any>(null)
 const jsFileContents = ref('')
-const jsSelOptions: any = ref<any>([])
+// const jsSelOptions: any = ref<any>([])
 const configDialogVisible = ref(false)
 const codeDialogVisible = ref(false)
 const imgPreviewVisible = ref(false)
 const warning = ref('')
+// platform name and arch name
 const platformName = isTauri ? platform() : 'web'
 const archName = isTauri ? arch() : 'web'
 
@@ -1582,14 +1584,13 @@ const easyLocal = async () => {
         // console.log('loadingText---', loadingText)
         loadingText(loadingState)
     }, 1000)
-    // if windows, down rh.exe
     // exe name
     let targetName = isAlphanumeric(store.currentProject.showName)
         ? store.currentProject.showName
         : store.currentProject.name
-    const targetExe = await join(targetDir, targetName, `${targetName}.exe`)
+    const appDataDirPath = await appDataDir()
+    const targetExe = await join(appDataDirPath, `${targetName}.exe`)
     if (platformName === 'windows') {
-        const appDataDirPath = await appDataDir()
         if (await exists(appDataDirPath)) {
             console.log('appDataDirPath exists')
         } else {
@@ -1615,7 +1616,7 @@ const easyLocal = async () => {
             await writeFile(icoPath, icoBlob)
             rhtarget = rhtarget.replace('app.ico', icoPath)
         } else {
-            rhtarget = rhtarget.split('[COMMANDS]')[0]
+            await copyFile(ppexePath, targetExe)
         }
         const rhscriptPath = await join(appDataDirPath, 'rhscript.txt')
         await writeTextFile(rhscriptPath, rhtarget)
@@ -1638,6 +1639,10 @@ const easyLocal = async () => {
                 : store.currentProject.iconRound
                 ? await cropImageToRound(roundIcon.value, 50)
                 : iconBase64.value
+            : platformName === 'macos'
+            ? store.currentProject.iconRound
+                ? await cropImageToRound(await imageToBase64(ppIcon), 50)
+                : await imageToBase64(ppIcon)
             : '',
         debug: store.currentProject.desktop.debug,
         customJs: await getInitializationScript(true),
@@ -1646,16 +1651,14 @@ const easyLocal = async () => {
         .then(async (res) => {
             loadingText(t('buildSuccess'))
             // isAlphanumeric(store.currentProject.showName)
-            if (
-                platformName === 'windows' &&
-                !isAlphanumeric(store.currentProject.showName)
-            ) {
+            if (platformName === 'windows') {
                 const chinaExeName = await join(
                     targetDir,
                     targetName,
                     `${store.currentProject.showName}.exe`
                 )
-                await rename(targetExe, chinaExeName)
+                await copyFile(targetExe, chinaExeName)
+                await remove(targetExe)
             }
             oneMessage.success(t('localSuccess'))
             buildLoading.value = false

@@ -182,7 +182,10 @@
                 <!-- api/template -->
                 <div v-if="menuIndex === '0-1'" class="cardContent">
                     <h1 class="cardTitle">my info</h1>
-                    <p>Get Github information.</p>
+                    <p>
+                        Get Github information.（id:
+                        {{ creatDeviceid() }}）
+                    </p>
                     <div class="cardBox">
                         <el-tooltip
                             content="Github discount amount"
@@ -980,6 +983,24 @@
                         <el-tooltip content="auto operation" placement="bottom">
                             <el-button>{{ t('autoOperation') }}</el-button>
                         </el-tooltip>
+                        <el-tooltip
+                            content="disable right click"
+                            placement="bottom"
+                        >
+                            <el-button>全局禁止右键</el-button>
+                        </el-tooltip>
+                        <el-tooltip
+                            content="allow some right click"
+                            placement="bottom"
+                        >
+                            <el-button>允许部分右键</el-button>
+                        </el-tooltip>
+                        <el-tooltip
+                            content="enable right click"
+                            placement="bottom"
+                        >
+                            <el-button>允许右键</el-button>
+                        </el-tooltip>
                     </div>
                     <div class="codeDemo">
                         <h2>{{ t('removeWebElement') }}</h2>
@@ -1160,6 +1181,7 @@ import {
     yunPaySignKey,
     zPayMchId,
     zPaySignKey,
+    creatDeviceid,
 } from '@/utils/common'
 import About from '@/pages/about.vue'
 import {
